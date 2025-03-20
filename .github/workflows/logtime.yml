@@ -2,7 +2,8 @@ name: Logtime Automation
 
 on:
   schedule:
-    - cron: '20 19 * * *'  # Exécution tous les jours à 19h05 UTC
+    - cron: '30 18 * * *'  # Exécution tous les jours à 19h30 heure française
+    - cron: '30 19 * * *'  # Exécution tous les jours à 19h05 UTC
   workflow_dispatch:  # Permet de le lancer manuellement
 
 jobs:
@@ -19,11 +20,11 @@ jobs:
           python-version: '3.9'
 
       - name: Install dependencies
-        run: pip install requests
+        run: pip3 install requests
 
       - name: Run script
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        run: python script.py
+        run: python3 script.py
