@@ -3,9 +3,10 @@ from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
 
-# ⚙️ Paramètres de l'API 42
-CLIENT_ID = "u-s4t2ud-4b31e0fd02482feb6bfd0507f44a967c6b9bd7932341f388b76c0e24f91103a2"
-CLIENT_SECRET = "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"
+import os
+
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 USER_LOGIN = "pledieu"  # Ton login 42
 CAMPUS_ID = 9  # ID de ton campus (42 Lyon par exemple)
 
@@ -13,7 +14,7 @@ CAMPUS_ID = 9  # ID de ton campus (42 Lyon par exemple)
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 EMAIL_SENDER = "paul.ledieu@gmail.com"
-EMAIL_PASSWORD = "zgfk ozcl niik lqzp"
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 EMAIL_RECEIVER = "paul.ledieu@gmail.com"
 
 # 🔑 Obtenir le token d'accès OAuth 2.0
