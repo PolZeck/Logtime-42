@@ -2,8 +2,8 @@ name: Logtime Automation
 
 on:
   schedule:
-    - cron: '30 18 * * *'  # Exécution tous les jours à 19h30 heure française
-    - cron: '30 19 * * *'  # Exécution tous les jours à 19h05 UTC
+    - cron: '30 11 * * *'  # Exécution tous les jours à 19h30 heure française
+    - cron: '05 18 * * *'  # Exécution tous les jours à 19h05 UTC
   workflow_dispatch:  # Permet de le lancer manuellement
 
 jobs:
