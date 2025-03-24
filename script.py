@@ -18,6 +18,10 @@ EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 EMAIL_RECEIVER = "paul.ledieu@gmail.com"
 
 
+print("CLIENT_ID:", CLIENT_ID)
+print("CLIENT_SECRET:", CLIENT_SECRET)
+print("EMAIL_PASSWORD:", EMAIL_PASSWORD)
+
 # 🔑 Obtenir le token d'accès OAuth 2.0
 def get_access_token():
     url = "https://api.intra.42.fr/oauth/token"
