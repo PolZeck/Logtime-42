@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 import requests
 from datetime import datetime, timedelta
 import smtplib
@@ -22,6 +24,7 @@ print("CLIENT_ID:", CLIENT_ID)
 print("CLIENT_SECRET:", CLIENT_SECRET)
 print("EMAIL_PASSWORD:", EMAIL_PASSWORD)
 
+
 # 🔑 Obtenir le token d'accès OAuth 2.0
 def get_access_token():
     url = "https://api.intra.42.fr/oauth/token"
@@ -33,43 +36,57 @@ def get_access_token():
     response = requests.post(url, data=data)
     return response.json().get("access_token")
 
+
 # 📡 Récupérer toutes les sessions de connexion de l'utilisateur
 def get_logtime_data():
     token = get_access_token()
     headers = {"Authorization": f"Bearer {token}"}
-    url = f"https://api.intra.42.fr/v2/users/{USER_LOGIN}/locations"
+    all_sessions = []
+    page = 1
 
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        print("Erreur API:", response.text)
-        return []
-    
-    return response.json()
+    while True:
+        url = f"https://api.intra.42.fr/v2/users/{USER_LOGIN}/locations?page={page}&per_page=100"
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            print("Erreur API:", response.text)
+            break
+
+        page_data = response.json()
+        if not page_data:
+            break
+
+        all_sessions.extend(page_data)
+        page += 1
+
+    return all_sessions
+
 
 # 🕒 Calculer le temps total d'une période donnée en gérant les chevauchements et les sessions ouvertes
-def calculate_logtime(sessions, start_date, end_date):
+from datetime import datetime, timezone
+
+def calculate_logtime(sessions, start_date, end_date, subtract_minutes=False):
     total_seconds = 0
 
     for session in sessions:
-        begin_at = datetime.strptime(session["begin_at"], "%Y-%m-%dT%H:%M:%S.%fZ")
-        end_at = session["end_at"]
+        begin_at = datetime.strptime(session["begin_at"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+        end_at_raw = session["end_at"]
         
-        # 🟢 Si la session est encore ouverte, prendre UTC now comme fin
-        if not end_at:
-            end_at = datetime.utcnow()
+        if not end_at_raw:
+            end_at = datetime.now(timezone.utc)
+            if subtract_minutes:
+                end_at -= timedelta(minutes=10)
         else:
-            end_at = datetime.strptime(end_at, "%Y-%m-%dT%H:%M:%S.%fZ")
+            end_at = datetime.strptime(end_at_raw, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
 
-        # 🟡 Vérifier si la session chevauche la période demandée
         if begin_at < end_date and end_at > start_date:
-            # Déterminer la vraie période de la session à inclure dans la plage
-            session_start = max(begin_at, start_date)  # On prend la plus grande date
-            session_end = min(end_at, end_date)  # On prend la plus petite date
+            session_start = max(begin_at, start_date)
+            session_end = min(end_at, end_date)
             duration = (session_end - session_start).total_seconds()
-
-            total_seconds += duration  # Ajouter la durée de la session
+            total_seconds += duration
 
     return total_seconds
+
+
 
 # 🔢 Convertir les secondes en heures et minutes
 def format_time(seconds):
@@ -78,28 +95,33 @@ def format_time(seconds):
     return f"{hours}h {minutes}min"
 
 # 📊 Récupérer les statistiques de logtime
+from datetime import datetime, timedelta, timezone
+
 def get_logtime_report():
     sessions = get_logtime_data()
-    today = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
-    # Début et fin des périodes
-    start_of_week = today - timedelta(days=today.weekday())  # Lundi de cette semaine
-    start_of_month = today.replace(day=1)  # 1er du mois
-    end_of_day = today.replace(hour=23, minute=59, second=59)
+    # Début et fin de périodes en UTC
+    start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_today = now.replace(hour=23, minute=59, second=59, microsecond=999999)
 
-    # Calculs avec prise en compte des chevauchements
-    logtime_today = calculate_logtime(sessions, today.replace(hour=0, minute=0, second=0), end_of_day)
-    logtime_week = calculate_logtime(sessions, start_of_week, end_of_day)
-    logtime_month = calculate_logtime(sessions, start_of_month, end_of_day)
+    start_of_week = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_week = end_of_today
+
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    end_of_month = end_of_today
+
+    logtime_today = calculate_logtime(sessions, start_of_today, end_of_today)
+    logtime_week = calculate_logtime(sessions, start_of_week, end_of_week)
+    logtime_month = calculate_logtime(sessions, start_of_month, end_of_month, subtract_minutes=True)
 
     return {
         "today": format_time(logtime_today),
         "week": format_time(logtime_week),
         "month": format_time(logtime_month)
     }
-print("CLIENT_ID:", CLIENT_ID)
-print("CLIENT_SECRET:", CLIENT_SECRET)
-print("EMAIL_PASSWORD:", EMAIL_PASSWORD)
+
+
 # ✉️ Envoyer un email avec le récapitulatif
 def send_email_report():
     report = get_logtime_report()
