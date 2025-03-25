@@ -169,46 +169,81 @@ def get_logtime_report():
         "now": now
     }
 
-# ✉️ Envoyer un email avec le récapitulatif
-def send_email_report(user_login, email_receiver):
-    global USER_LOGIN
-    USER_LOGIN = user_login  # On met à jour le login utilisé dans l'API
+import os
+import requests
 
-    report = get_logtime_report()
-    remaining_week, remaining_month = calculate_remaining_times(
-        report["now"], report["week_raw"], report["month_raw"]
-    )
+def send_telegram_message(message):
+    token = os.getenv("TELEGRAM_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
-    subject = f"🕒 Récapitulatif Logtime 42 — {user_login}"
-    body = f"""
-    Bonjour {user_login} !
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    data = {
+        "chat_id": chat_id,
+        "text": message,
+        "parse_mode": "Markdown"
+    }
 
-    Voici ton récapitulatif de logtime 42 :
-
-    📅 Aujourd'hui : {report["today"]}
-    📆 Cette semaine : {report["week"]}  (⏳ Reste : {remaining_week})
-    🗓️ Ce mois : {report["month"]}  (⏳ Reste : {remaining_month})
-
-    Bon travail ! 🚀
-    """
-    
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = EMAIL_SENDER
-    msg["To"] = email_receiver
-
-    try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_SENDER, email_receiver, msg.as_string())
-        server.quit()
-        print(f"📩 Email envoyé à {email_receiver} (user {user_login})")
-    except Exception as e:
-        print(f"❌ Erreur lors de l'envoi de l'email à {email_receiver} :", e)
+    response = requests.post(url, data=data)
+    if response.status_code != 200:
+        print("❌ Erreur Telegram:", response.text)
+    else:
+        print("✅ Message Telegram envoyé.")
 
 
-# 📌 Lancer l'envoi du mail automatiquement chaque jour
 if __name__ == "__main__":
-    send_email_report("pledieu", "paul.ledieu@gmail.com")
-    # send_email_report("lcosson", "L.cosson@outlook.fr")
+    report = get_logtime_report()
+    msg = f"""
+🕒 *Logtime 42*
+📅 Aujourd'hui : {report['today']}
+📆 Cette semaine : {report['week']}
+🗓️ Ce mois : {report['month']}
+"""
+    send_telegram_message(msg)
+
+
+
+
+
+# ✉️ Envoyer un email avec le récapitulatif
+# def send_email_report(user_login, email_receiver):
+#     global USER_LOGIN
+#     USER_LOGIN = user_login  # On met à jour le login utilisé dans l'API
+
+#     report = get_logtime_report()
+#     remaining_week, remaining_month = calculate_remaining_times(
+#         report["now"], report["week_raw"], report["month_raw"]
+#     )
+
+#     subject = f"🕒 Récapitulatif Logtime 42 — {user_login}"
+#     body = f"""
+#     Bonjour {user_login} !
+
+#     Voici ton récapitulatif de logtime 42 :
+
+#     📅 Aujourd'hui : {report["today"]}
+#     📆 Cette semaine : {report["week"]}  (⏳ Reste : {remaining_week})
+#     🗓️ Ce mois : {report["month"]}  (⏳ Reste : {remaining_month})
+
+#     Bon travail ! 🚀
+#     """
+    
+#     msg = MIMEText(body)
+#     msg["Subject"] = subject
+#     msg["From"] = EMAIL_SENDER
+#     msg["To"] = email_receiver
+
+#     try:
+#         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+#         server.starttls()
+#         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+#         server.sendmail(EMAIL_SENDER, email_receiver, msg.as_string())
+#         server.quit()
+#         print(f"📩 Email envoyé à {email_receiver} (user {user_login})")
+#     except Exception as e:
+#         print(f"❌ Erreur lors de l'envoi de l'email à {email_receiver} :", e)
+
+
+# # 📌 Lancer l'envoi du mail automatiquement chaque jour
+# if __name__ == "__main__":
+#     send_email_report("pledieu", "paul.ledieu@gmail.com")
+#     # send_email_report("lcosson", "L.cosson@outlook.fr")
