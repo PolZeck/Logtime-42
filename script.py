@@ -189,21 +189,6 @@ def send_telegram_message(message):
     else:
         print("✅ Message Telegram envoyé.")
 
-
-if __name__ == "__main__":
-    report = get_logtime_report()
-    msg = f"""
-🕒 *Logtime 42*
-📅 Aujourd'hui : {report['today']}
-📆 Cette semaine : {report['week']}
-🗓️ Ce mois : {report['month']}
-"""
-    send_telegram_message(msg)
-
-
-
-
-
 # ✉️ Envoyer un email avec le récapitulatif
 # def send_email_report(user_login, email_receiver):
 #     global USER_LOGIN
@@ -241,6 +226,35 @@ if __name__ == "__main__":
 #         print(f"📩 Email envoyé à {email_receiver} (user {user_login})")
 #     except Exception as e:
 #         print(f"❌ Erreur lors de l'envoi de l'email à {email_receiver} :", e)
+
+if __name__ == "__main__":
+    report = get_logtime_report()
+
+    remaining_week, remaining_month = calculate_remaining_times(
+        report["now"], report["week_raw"], report["month_raw"]
+    )
+
+    msg = f"""
+🕒 *Récapitulatif Logtime 42*
+
+📅 *Aujourd'hui* : {report["today"]}
+📆 *Cette semaine* : {report["week"]}  (⏳ Reste : {remaining_week})
+🗓️ *Ce mois* : {report["month"]}  (⏳ Reste : {remaining_month})
+
+🧠 *Objectifs :*
+• Semaine : 35h
+• Mois : 7h x chaque jour ouvré
+
+🚀 Continue comme ça champion !
+    """.strip()
+
+    send_telegram_message(msg)
+
+    # send_email_report("lcosson", "paul.ledieu@gmail.com")
+
+
+
+
 
 
 # # 📌 Lancer l'envoi du mail automatiquement chaque jour
