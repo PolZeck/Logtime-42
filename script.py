@@ -63,26 +63,43 @@ def get_logtime_data():
 from datetime import datetime, timezone
 
 def calculate_logtime(sessions, start_date, end_date, subtract_minutes=False):
-    total_seconds = 0
+    sessions = sorted(sessions, key=lambda s: s["begin_at"])
+    now = datetime.now(timezone.utc)
+    merged_intervals = []
 
     for session in sessions:
         begin_at = datetime.strptime(session["begin_at"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
-        end_at_raw = session["end_at"]
-        
-        if not end_at_raw:
-            end_at = datetime.now(timezone.utc)
-            if subtract_minutes:
-                end_at -= timedelta(minutes=10)
+        end_raw = session["end_at"]
+        end_at = (
+            datetime.strptime(end_raw, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+            if end_raw else now - timedelta(minutes=10) if subtract_minutes else now
+        )
+
+        # Ignorer si totalement hors période
+        if begin_at >= end_date or end_at <= start_date:
+            continue
+
+        # Tronquer aux limites de la période
+        begin_at = max(begin_at, start_date)
+        end_at = min(end_at, end_date)
+
+        # Fusion intelligente
+        if not merged_intervals:
+            merged_intervals.append((begin_at, end_at))
         else:
-            end_at = datetime.strptime(end_at_raw, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+            last_begin, last_end = merged_intervals[-1]
+            if begin_at <= last_end:  # chevauchement
+                # Fusionner
+                new_begin = min(last_begin, begin_at)
+                new_end = max(last_end, end_at)
+                merged_intervals[-1] = (new_begin, new_end)
+            else:
+                merged_intervals.append((begin_at, end_at))
 
-        if begin_at < end_date and end_at > start_date:
-            session_start = max(begin_at, start_date)
-            session_end = min(end_at, end_date)
-            duration = (session_end - session_start).total_seconds()
-            total_seconds += duration
-
+    # Calcul final du logtime
+    total_seconds = sum((end - start).total_seconds() for start, end in merged_intervals)
     return total_seconds
+
 
 import calendar
 
@@ -194,4 +211,4 @@ def send_email_report(user_login, email_receiver):
 # 📌 Lancer l'envoi du mail automatiquement chaque jour
 if __name__ == "__main__":
     send_email_report("pledieu", "paul.ledieu@gmail.com")
-    send_email_report("lcosson", "L.cosson@outlook.fr")
+    # send_email_report("lcosson", "L.cosson@outlook.fr")
