@@ -2,7 +2,14 @@ name: Logtime Automation
 
 on:
   schedule:
-    - cron: "0 7 * * *"  # Tous les jours à 7h UTC (8h Paris)
+    - cron: "0 6 * * *"  # 08:00 Paris (UTC+2)
+    - cron: "0 8 * * *"  # 10:00
+    - cron: "0 10 * * *" # 12:00
+    - cron: "0 12 * * *" # 14:00
+    - cron: "0 14 * * *" # 16:00
+    - cron: "0 16 * * *" # 18:00
+    - cron: "0 18 * * *" # 20:00
+    - cron: "0 20 * * *" # 22:00  # Tous les jours à 7h UTC (8h Paris)
   workflow_dispatch:
 
 jobs:
